@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Para ti ♡</title>
+
+    <!-- Three.js para renderizado 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: Georgia, serif;
+        color: white;
+        user-select: none;
+      }
+
+      #webgl-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+      }
+
+      #webgl-container:active {
+        cursor: grabbing;
+      }
+
+      /* HEADER */
+      .header {
+        position: absolute;
+        z-index: 50;
+        top: 24px;
+        left: 28px;
+        right: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: Arial, sans-serif;
+        pointer-events: none;
+      }
+
+      .header * {
+        pointer-events: auto;
+      }
+
+      .music {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 14px;
+        border: 1px solid rgba(255, 220, 130, 0.3);
+        border-radius: 40px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+      }
+
+      .music button {
+        width: 36px;
+        height: 36px;
+        border: 1px solid rgba(255, 220, 130, 0.8);
+        border-radius: 50%;
+        background: transparent;
+        color: #ffe4a0;
+        cursor: pointer;
+      }
+
+      .song {
+        font-size: 12px;
+      }
+      .song small {
+        display: block;
+        opacity: 0.5;
+        margin-top: 2px;
+      }
+      .header-title {
+        font-size: 24px;
+        font-family: cursive;
+        color: #ffe6a0;
+      }
+
+      /* ETIQUETAS DE FLORES HTML */
+      .flower-label-3d {
+        position: absolute;
+        transform: translate(-50%, -100%);
+        color: #fff0b5;
+        font-size: 13px;
+        white-space: nowrap;
+        text-shadow:
+          0 0 8px #000,
+          0 0 15px #000;
+        pointer-events: auto;
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 6px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        transition:
+          transform 0.2s,
+          background 0.2s;
+      }
+
+      .flower-label-3d:hover {
+        transform: translate(-50%, -110%) scale(1.15);
+        background: rgba(255, 180, 0, 0.4);
+        border-color: #ffd700;
+      }
+
+      /* TEXTO CENTRAL */
+      .center-text {
+        position: absolute;
+        left: 50%;
+        top: 55%;
+        transform: translate(-50%, -50%);
+        z-index: 20;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .center-text h1 {
+        font-size: clamp(34px, 4.4vw, 62px);
+        font-weight: normal;
+        letter-spacing: 5px;
+        color: #fff5d1;
+        text-shadow:
+          0 0 10px #fff,
+          0 0 30px #ffd33d,
+          0 0 70px #ff9800;
+      }
+
+      .center-text p {
+        margin-top: 8px;
+        color: rgba(255, 239, 193, 0.8);
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        letter-spacing: 1px;
+      }
+
+      /* INSTRUCCIÓN Y CARTA MODAL */
+      .instruction {
+        position: absolute;
+        z-index: 50;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+        pointer-events: none;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.82);
+        backdrop-filter: blur(8px);
+        opacity: 0;
+        visibility: hidden;
+        transition: 0.45s ease;
+      }
+
+      .overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .letter {
+        position: relative;
+        width: min(390px, 86vw);
+        padding: 35px 30px;
+        border-radius: 15px;
+        background:
+          radial-gradient(circle at 50% 10%, white, transparent 35%),
+          linear-gradient(135deg, #fff4bf, #ffe18a, #fff3bf);
+        color: #4b3107;
+        text-align: center;
+        box-shadow:
+          0 0 60px rgba(255, 190, 30, 0.4),
+          0 30px 100px #000;
+      }
+
+      .close {
+        position: absolute;
+        top: 12px;
+        right: 17px;
+        border: none;
+        background: transparent;
+        color: #5c3c08;
+        font-size: 28px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="webgl-container"></div>
+    <div id="labels-container"></div>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="music">
+        <button id="musicButton">▶</button>
+        <div class="song">
+          Like You Do
+          <small>Joji</small>
+        </div>
+      </div>
+      <div class="header-title">Para ti ♡</div>
+      <div>•••</div>
+    </header>
+
+    <!-- TEXTO CENTRAL -->
+    <div class="center-text">
+      <h1>Te quiero</h1>
+      <p>Y en cada universo, también.</p>
+    </div>
+
+    <!-- INSTRUCCIÓN -->
+    <div class="instruction">
+      Arrastra con el mouse para explorar el espacio 3D • Clic en un ramo para
+      leer
+    </div>
+
+    <!-- CARTA MODAL -->
+    <div class="overlay" id="overlay">
+      <div class="letter">
+        <button class="close" id="close">×</button>
+        <div style="font-size: 60px; margin-bottom: 10px">💐</div>
+        <h2 id="letterTitle" style="font-family: cursive; font-size: 38px">
+          Mi amor
+        </h2>
+        <p
+          id="letterMessage"
+          style="
+            font-family: Arial;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 15px;
+          "
+        ></p>
+        <div style="margin-top: 25px; font-family: cursive; font-size: 30px">
+          Te quiero Mucho
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* DATOS DE LAS FLORES CON GRAN SEPARACIÓN (RADIOS 22, 28 Y 34) */
+      const flowerData = [
+        {
+          title: "Mi persona favorita",
+          msg: "De todas las personas de este universo, tú eres mi coincidencia favorita.",
+          radius: 20,
+          speed: 0.0003,
+          angle: 0.2,
+          tilt: 0.35,
+        },
+        {
+          title: "Mi lugar seguro",
+          msg: "Contigo puedo ser yo mismo. Gracias por ser ese lugar donde todo parece estar bien.",
+          radius: 20,
+          speed: 0.0003,
+          angle: Math.PI + 0.2,
+          tilt: -0.35,
+        },
+        {
+          title: "Eres mi sol",
+          msg: "Hay personas que iluminan un día. Tú tienes la capacidad de iluminar muchos más.",
+          radius: 27,
+          speed: 0.00022,
+          angle: 1.05,
+          tilt: 0.55,
+        },
+        {
+          title: "Siempre juntos",
+          msg: "No importa cuántos caminos existan. Siempre habrá un pequeño universo que nos recuerde.",
+          radius: 27,
+          speed: 0.00022,
+          angle: Math.PI + 1.05,
+          tilt: -0.55,
+        },
+        {
+          title: "Eres única",
+          msg: "Entre millones de estrellas, hay algunas que simplemente brillan diferente. Tú eres una de ellas.",
+          radius: 34,
+          speed: 0.00015,
+          angle: 2.35,
+          tilt: 0.8,
+        },
+        {
+          title: "Eres mi todo",
+          msg: "Si pudiera guardar un universo entero en un solo lugar, probablemente tendría tu nombre.",
+          radius: 34,
+          speed: 0.00015,
+          angle: Math.PI + 2.35,
+          tilt: -0.8,
+        },
+      ];
+
+      const container = document.getElementById("webgl-container");
+      const labelsContainer = document.getElementById("labels-container");
+      const overlay = document.getElementById("overlay");
+      const letterTitle = document.getElementById("letterTitle");
+      const letterMessage = document.getElementById("letterMessage");
+
+      /* ESCENA */
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x000000, 0.006);
+
+      const camera = new THREE.PerspectiveCamera(
+        55,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+
+      let cameraDistance = 58;
+      let cameraYaw = 0;
+      let cameraPitch = 0.35;
+      let cameraTarget = new THREE.Vector3(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      container.appendChild(renderer.domElement);
+
+      /* ILUMINACIÓN */
+      scene.add(new THREE.AmbientLight(0xfff5e0, 1.8));
+
+      const coreLight = new THREE.PointLight(0xffb300, 10, 80, 1.5);
+      coreLight.position.set(0, 0, 0);
+      scene.add(coreLight);
+
+      const secondLight = new THREE.PointLight(0xffd76a, 4, 50);
+      secondLight.position.set(0, 8, 4);
+      scene.add(secondLight);
+
+      /* ESTRELLAS DEL UNIVERSO */
+      function createStarField() {
+        const count = 9000;
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        for (let i = 0; i < count; i++) {
+          const r = 70 + Math.random() * 150;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+
+          pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+          pos[i * 3 + 1] = r * Math.cos(phi);
+          pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+
+          const warm = Math.random();
+          colors[i * 3] = 1.0;
+          colors[i * 3 + 1] = 0.78 + warm * 0.22;
+          colors[i * 3 + 2] = 0.48 + warm * 0.4;
+        }
+
+        geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+        const mat = new THREE.PointsMaterial({
+          size: 0.11,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.78,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+
+        return new THREE.Points(geo, mat);
+      }
+
+      scene.add(createStarField());
+
+      /* GALAXIA CENTRAL */
+      const galaxyGroup = new THREE.Group();
+      scene.add(galaxyGroup);
+
+      const galaxyCount = 32000;
+      const galaxyGeo = new THREE.BufferGeometry();
+      const galaxyPos = new Float32Array(galaxyCount * 3);
+      const galaxyColor = new Float32Array(galaxyCount * 3);
+
+      for (let i = 0; i < galaxyCount; i++) {
+        const core = Math.random() < 0.28;
+        const radius = core
+          ? Math.pow(Math.random(), 2.1) * 5.5
+          : 4 + Math.pow(Math.random(), 0.72) * 22;
+
+        const arm = Math.floor(Math.random() * 3);
+        const angle =
+          arm * ((Math.PI * 2) / 3) +
+          radius * 0.38 +
+          (Math.random() - 0.5) * (core ? 1.5 : 0.48);
+
+        const thickness = core
+          ? (Math.random() - 0.5) * 3
+          : (Math.random() - 0.5) * (2.8 * Math.exp(-radius / 11));
+
+        galaxyPos[i * 3] = Math.cos(angle) * radius;
+        galaxyPos[i * 3 + 1] = thickness;
+        galaxyPos[i * 3 + 2] = Math.sin(angle) * radius * 0.58;
+
+        const c = new THREE.Color();
+        c.setHSL(
+          0.105 + Math.random() * 0.045,
+          0.9,
+          core ? 0.75 + Math.random() * 0.2 : 0.43 + Math.random() * 0.28,
+        );
+
+        galaxyColor[i * 3] = c.r;
+        galaxyColor[i * 3 + 1] = c.g;
+        galaxyColor[i * 3 + 2] = c.b;
+      }
+
+      galaxyGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(galaxyPos, 3),
+      );
+      galaxyGeo.setAttribute(
+        "color",
+        new THREE.BufferAttribute(galaxyColor, 3),
+      );
+
+      const galaxyMat = new THREE.PointsMaterial({
+        size: 0.18,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.92,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const galaxyPoints = new THREE.Points(galaxyGeo, galaxyMat);
+      galaxyGroup.add(galaxyPoints);
+
+      /* El centro queda formado únicamente por partículas y luz. No hay esfera sólida. */
+
+      /* ÓRBITAS VISUALES SEPARADAS */
+      const orbitRings = [];
+
+      [22, 28, 34].forEach((radius, index) => {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(radius, 0.022, 8, 220),
+          new THREE.MeshBasicMaterial({
+            color: 0xffc83d,
+            transparent: true,
+            opacity: 0.18 - index * 0.03,
+            blending: THREE.AdditiveBlending,
+          }),
+        );
+
+        ring.rotation.x = Math.PI / 2;
+        ring.scale.z = 0.58;
+        scene.add(ring);
+        orbitRings.push(ring);
+      });
+
+      /* =========================================================
+   POLVO ORBITAL CERCANO
+   Llena el espacio sin convertirlo en un fondo vacío.
+========================================================= */
+
+      const orbitalDustCount = 7000;
+      const orbitalDustGeo = new THREE.BufferGeometry();
+      const orbitalDustPos = new Float32Array(orbitalDustCount * 3);
+      const orbitalDustCol = new Float32Array(orbitalDustCount * 3);
+
+      for (let i = 0; i < orbitalDustCount; i++) {
+        const band = Math.random();
+        const radius =
+          band < 0.55 ? 10 + Math.random() * 16 : 25 + Math.random() * 20;
+
+        const angle = Math.random() * Math.PI * 2;
+        const thickness = (Math.random() - 0.5) * (band < 0.55 ? 2.4 : 4.5);
+
+        orbitalDustPos[i * 3] = Math.cos(angle) * radius;
+
+        orbitalDustPos[i * 3 + 1] = thickness + Math.sin(angle * 3) * 0.35;
+
+        orbitalDustPos[i * 3 + 2] = Math.sin(angle) * radius * 0.58;
+
+        const c = new THREE.Color();
+
+        c.setHSL(
+          0.105 + Math.random() * 0.045,
+          0.95,
+          0.42 + Math.random() * 0.4,
+        );
+
+        orbitalDustCol[i * 3] = c.r;
+        orbitalDustCol[i * 3 + 1] = c.g;
+        orbitalDustCol[i * 3 + 2] = c.b;
+      }
+
+      orbitalDustGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(orbitalDustPos, 3),
+      );
+
+      orbitalDustGeo.setAttribute(
+        "color",
+        new THREE.BufferAttribute(orbitalDustCol, 3),
+      );
+
+      const orbitalDust = new THREE.Points(
+        orbitalDustGeo,
+        new THREE.PointsMaterial({
+          size: 0.075,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.62,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
+      );
+
+      scene.add(orbitalDust);
+
+      /* Pequeños cúmulos de polvo más brillantes alrededor del núcleo. */
+      const sparkleCount = 1100;
+      const sparkleGeo = new THREE.BufferGeometry();
+      const sparklePos = new Float32Array(sparkleCount * 3);
+
+      for (let i = 0; i < sparkleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 5 + Math.random() * 13;
+
+        sparklePos[i * 3] = Math.cos(angle) * radius;
+
+        sparklePos[i * 3 + 1] = (Math.random() - 0.5) * 2.8;
+
+        sparklePos[i * 3 + 2] = Math.sin(angle) * radius * 0.58;
+      }
+
+      sparkleGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(sparklePos, 3),
+      );
+
+      const sparkleCloud = new THREE.Points(
+        sparkleGeo,
+        new THREE.PointsMaterial({
+          color: 0xffdf68,
+          size: 0.12,
+          transparent: true,
+          opacity: 0.7,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
+      );
+
+      scene.add(sparkleCloud);
+
+      /* CORAZÓN DE POLVO */
+      const heartCount = 5200;
+      const heartGeo = new THREE.BufferGeometry();
+      const heartPos = new Float32Array(heartCount * 3);
+      const heartCol = new Float32Array(heartCount * 3);
+
+      for (let i = 0; i < heartCount; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const edge = Math.random();
+
+        let x = 16 * Math.pow(Math.sin(t), 3);
+        let y =
+          13 * Math.cos(t) -
+          5 * Math.cos(2 * t) -
+          2 * Math.cos(3 * t) -
+          Math.cos(4 * t);
+
+        const spread = (Math.random() - 0.5) * (1.1 + edge * 3.2);
+
+        x += spread;
+        y += spread;
+
+        heartPos[i * 3] = x * 0.42;
+        heartPos[i * 3 + 1] = 9.5 + y * 0.42;
+        heartPos[i * 3 + 2] = (Math.random() - 0.5) * 1.4;
+
+        const c = new THREE.Color();
+        c.setHSL(0.12 + Math.random() * 0.025, 1, 0.58 + Math.random() * 0.3);
+
+        heartCol[i * 3] = c.r;
+        heartCol[i * 3 + 1] = c.g;
+        heartCol[i * 3 + 2] = c.b;
+      }
+
+      heartGeo.setAttribute("position", new THREE.BufferAttribute(heartPos, 3));
+      heartGeo.setAttribute("color", new THREE.BufferAttribute(heartCol, 3));
+
+      const heartMat = new THREE.PointsMaterial({
+        size: 0.16,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+
+      const heart = new THREE.Points(heartGeo, heartMat);
+      scene.add(heart);
+
+      /* PUENTE DE POLVO */
+      const bridgeCount = 1700;
+      const bridgeGeo = new THREE.BufferGeometry();
+      const bridgePos = new Float32Array(bridgeCount * 3);
+
+      for (let i = 0; i < bridgeCount; i++) {
+        const t = Math.random();
+        const y = 9.5 * (1 - t);
+        const width = (1 - t) * 1.2 + 0.05;
+
+        bridgePos[i * 3] =
+          (Math.random() - 0.5) * width + Math.sin(t * 15) * 0.2;
+
+        bridgePos[i * 3 + 1] = y + (Math.random() - 0.5) * width;
+        bridgePos[i * 3 + 2] = (Math.random() - 0.5) * width;
+      }
+
+      bridgeGeo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(bridgePos, 3),
+      );
+
+      const bridge = new THREE.Points(
+        bridgeGeo,
+        new THREE.PointsMaterial({
+          color: 0xffd34e,
+          size: 0.12,
+          transparent: true,
+          opacity: 0.65,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
+      );
+
+      scene.add(bridge);
+
+      /* =========================================================
+   MODELADO REALISTA DE GIRASOL TRADICIONAL
+========================================================= */
+      function createRealSunflower() {
+        const sunflower = new THREE.Group();
+
+        /*
+         * Girasol construido como una flor reconocible:
+         * - doble corona de pétalos largos y puntiagudos
+         * - disco central oscuro y grande
+         * - semillas doradas en espiral
+         * - sépalos verdes detrás
+         */
+
+        const petalOuterMat = new THREE.MeshStandardMaterial({
+          color: 0xffa800,
+          roughness: 0.52,
+          metalness: 0.02,
+          side: THREE.DoubleSide,
+        });
+
+        const petalInnerMat = new THREE.MeshStandardMaterial({
+          color: 0xffd21c,
+          roughness: 0.45,
+          metalness: 0.02,
+          side: THREE.DoubleSide,
+        });
+
+        const darkPetalMat = new THREE.MeshStandardMaterial({
+          color: 0xe88b00,
+          roughness: 0.55,
+          side: THREE.DoubleSide,
+        });
+
+        // Petal geometry: base estrecha, cuerpo ancho y punta redondeada.
+        function makePetalGeometry(length, width) {
+          const shape = new THREE.Shape();
+
+          shape.moveTo(0, 0);
+          shape.quadraticCurveTo(
+            -width * 0.65,
+            length * 0.28,
+            -width * 0.55,
+            length * 0.66,
+          );
+          shape.quadraticCurveTo(-width * 0.32, length * 0.94, 0, length);
+          shape.quadraticCurveTo(
+            width * 0.32,
+            length * 0.94,
+            width * 0.55,
+            length * 0.66,
+          );
+          shape.quadraticCurveTo(width * 0.65, length * 0.28, 0, 0);
+
+          return new THREE.ShapeGeometry(shape, 8);
+        }
+
+        const outerGeo = makePetalGeometry(1.75, 0.42);
+        const innerGeo = makePetalGeometry(1.48, 0.34);
+
+        // 32 pétalos exteriores: forma de corona muy marcada.
+        const outerCount = 32;
+
+        for (let i = 0; i < outerCount; i++) {
+          const angle = (i / outerCount) * Math.PI * 2;
+
+          const petal = new THREE.Mesh(outerGeo, petalOuterMat);
+
+          petal.position.set(
+            Math.cos(angle) * 0.42,
+            Math.sin(angle) * 0.42,
+            -0.03,
+          );
+
+          petal.rotation.z = angle - Math.PI / 2;
+
+          // Alternancia de tamaño para evitar aspecto artificial.
+          const scale = i % 2 === 0 ? 1.0 : 0.92;
+          petal.scale.set(scale, scale, 1);
+
+          sunflower.add(petal);
+        }
+
+        // Segunda corona intercalada y ligeramente elevada.
+        const innerCount = 28;
+
+        for (let i = 0; i < innerCount; i++) {
+          const angle = (i / innerCount) * Math.PI * 2 + Math.PI / innerCount;
+
+          const petal = new THREE.Mesh(innerGeo, petalInnerMat);
+
+          petal.position.set(
+            Math.cos(angle) * 0.31,
+            Math.sin(angle) * 0.31,
+            0.05,
+          );
+
+          petal.rotation.z = angle - Math.PI / 2;
+
+          sunflower.add(petal);
+        }
+
+        // Tercera corona corta para darle volumen.
+        const shortGeo = makePetalGeometry(1.05, 0.27);
+
+        for (let i = 0; i < 20; i++) {
+          const angle = (i / 20) * Math.PI * 2 + Math.PI / 20;
+
+          const petal = new THREE.Mesh(shortGeo, darkPetalMat);
+
+          petal.position.set(
+            Math.cos(angle) * 0.22,
+            Math.sin(angle) * 0.22,
+            0.1,
+          );
+
+          petal.rotation.z = angle - Math.PI / 2;
+          sunflower.add(petal);
+        }
+
+        // Disco central grande.
+        const centerMat = new THREE.MeshStandardMaterial({
+          color: 0x321707,
+          roughness: 0.9,
+          metalness: 0.02,
+        });
+
+        const center = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.72, 0.68, 0.22, 40),
+          centerMat,
+        );
+
+        center.rotation.x = Math.PI / 2;
+        center.position.z = 0.18;
+        sunflower.add(center);
+
+        // Semillas: pequeños puntos dorados en espiral.
+        const seedGeo = new THREE.SphereGeometry(0.045, 6, 6);
+
+        const seedMat = new THREE.MeshStandardMaterial({
+          color: 0x9a5b12,
+          roughness: 0.75,
+        });
+
+        for (let i = 0; i < 115; i++) {
+          const r = 0.08 + Math.sqrt(i / 115) * 0.58;
+          const goldenAngle = i * 2.399963;
+
+          const seed = new THREE.Mesh(seedGeo, seedMat);
+
+          seed.position.set(
+            Math.cos(goldenAngle) * r,
+            Math.sin(goldenAngle) * r,
+            0.31,
+          );
+
+          sunflower.add(seed);
+        }
+
+        // Sépalos verdes detrás de la flor.
+        const calyxMat = new THREE.MeshStandardMaterial({
+          color: 0x355d13,
+          roughness: 0.72,
+          side: THREE.DoubleSide,
+        });
+
+        const sepalGeo = makePetalGeometry(1.55, 0.72);
+
+        for (let i = 0; i < 10; i++) {
+          const angle = (i / 10) * Math.PI * 2;
+
+          const sepal = new THREE.Mesh(sepalGeo, calyxMat);
+
+          sepal.position.set(
+            Math.cos(angle) * 0.18,
+            Math.sin(angle) * 0.18,
+            -0.18,
+          );
+
+          sepal.rotation.z = angle - Math.PI / 2;
+          sepal.scale.setScalar(0.8);
+
+          sunflower.add(sepal);
+        }
+
+        return sunflower;
+      }
+      function createDetailedBouquet() {
+        const bouquet = new THREE.Group();
+
+        const stemMat = new THREE.MeshStandardMaterial({
+          color: 0x3d6118,
+          roughness: 0.6,
+        });
+        const leafMat = new THREE.MeshStandardMaterial({
+          color: 0x22420a,
+          roughness: 0.5,
+        });
+        const ribbonMat = new THREE.MeshStandardMaterial({
+          color: 0xd62800,
+          roughness: 0.3,
+        });
+
+        /* Tallos */
+        for (let i = 0; i < 5; i++) {
+          const stem = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.075, 0.11, 4.5, 10),
+            stemMat,
+          );
+          stem.position.set((i - 2) * 0.16, -1.3, -0.08);
+          stem.rotation.z = (i - 2) * -0.11;
+          bouquet.add(stem);
+        }
+
+        /* Hojas verdes anchas de girasol */
+        for (let i = 0; i < 6; i++) {
+          const leaf = new THREE.Mesh(
+            new THREE.SphereGeometry(0.55, 12, 8),
+            leafMat,
+          );
+          leaf.scale.set(0.65, 0.2, 0.9);
+          const a = (i * Math.PI) / 3;
+          leaf.position.set(
+            Math.cos(a) * 0.85,
+            -0.75 + Math.sin(i) * 0.14,
+            Math.sin(a) * 0.55,
+          );
+          leaf.rotation.y = a;
+          leaf.rotation.x = 0.35;
+          bouquet.add(leaf);
+        }
+
+        /* Lazo envolvente */
+        const ribbon = new THREE.Mesh(
+          new THREE.TorusGeometry(0.38, 0.12, 10, 20),
+          ribbonMat,
+        );
+        ribbon.position.set(0, -0.95, 0.25);
+        bouquet.add(ribbon);
+
+        /* 3 Girasoles bien definidos */
+        const flowerPositions = [
+          { x: 0, y: 0.8, z: 0, s: 1.25 },
+          { x: -1.1, y: 0.15, z: 0.25, s: 1.0, rx: 0.15, ry: -0.3 },
+          { x: 1.1, y: 0.15, z: 0.25, s: 1.0, rx: 0.15, ry: 0.3 },
+        ];
+
+        flowerPositions.forEach((p) => {
+          const sunflower = createRealSunflower();
+          sunflower.position.set(p.x, p.y, p.z);
+          sunflower.scale.setScalar(p.s);
+          if (p.rx) sunflower.rotation.x = p.rx;
+          if (p.ry) sunflower.rotation.y = p.ry;
+          bouquet.add(sunflower);
+        });
+
+        /* Aura volumétrica */
+        const aura = new THREE.Mesh(
+          new THREE.SphereGeometry(2.6, 24, 24),
+          new THREE.MeshBasicMaterial({
+            color: 0xffb300,
+            transparent: true,
+            opacity: 0.04,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          }),
+        );
+
+        aura.name = "aura";
+        bouquet.add(aura);
+
+        bouquet.scale.setScalar(0.85);
+
+        return bouquet;
+      }
+
+      const flowerGroup = new THREE.Group();
+      scene.add(flowerGroup);
+
+      const flowers3D = [];
+
+      flowerData.forEach((data, index) => {
+        const bouquet = createDetailedBouquet();
+
+        bouquet.userData.flowerIndex = index;
+        bouquet.userData.baseScale = 0.85;
+
+        flowerGroup.add(bouquet);
+
+        /* label */
+        const label = document.createElement("div");
+        label.className = "flower-label-3d";
+        label.textContent = `${data.title} ♡`;
+        label.style.pointerEvents = "none";
+        labelsContainer.appendChild(label);
+
+        flowers3D.push({
+          mesh: bouquet,
+          label,
+          data,
+          angle: data.angle,
+          radius: data.radius,
+          speed: data.speed,
+          tilt: data.tilt,
+          selected: false,
+          returning: false,
+          hover: 0,
+          basePosition: new THREE.Vector3(),
+          targetPosition: new THREE.Vector3(),
+          selectionStart: 0,
+        });
+      });
+
+      /* RAYCASTING — CLICK REAL EN EL RAMO 3D */
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+
+      function updatePointer(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      }
+
+      function findFlowerObject(object) {
+        let current = object;
+
+        while (current) {
+          if (
+            current.userData &&
+            Number.isInteger(current.userData.flowerIndex)
+          ) {
+            return current.userData.flowerIndex;
+          }
+          current = current.parent;
+        }
+
+        return null;
+      }
+
+      renderer.domElement.addEventListener("pointermove", (event) => {
+        updatePointer(event);
+
+        raycaster.setFromCamera(pointer, camera);
+
+        const objects = flowers3D.map((f) => f.mesh);
+        const hits = raycaster.intersectObjects(objects, true);
+
+        renderer.domElement.style.cursor = hits.length ? "pointer" : "grab";
+      });
+
+      renderer.domElement.addEventListener("click", (event) => {
+        if (dragMoved) return;
+
+        updatePointer(event);
+        raycaster.setFromCamera(pointer, camera);
+
+        const objects = flowers3D.map((f) => f.mesh);
+        const hits = raycaster.intersectObjects(objects, true);
+
+        if (!hits.length) return;
+
+        const index = findFlowerObject(hits[0].object);
+
+        if (index !== null) {
+          selectFlower(index);
+        }
+      });
+
+      /* SELECCIÓN: RAMO → CARTA */
+      let selectedFlower = null;
+
+      function selectFlower(index) {
+        if (selectedFlower !== null) return;
+
+        const flower = flowers3D[index];
+        selectedFlower = index;
+        flower.selected = true;
+        flower.selectionStart = performance.now();
+        flower.basePosition.copy(flower.mesh.position);
+
+        galaxyMat.opacity = 1;
+
+        letterTitle.textContent = flower.data.title;
+        letterMessage.textContent = flower.data.msg;
+
+        setTimeout(() => {
+          overlay.classList.add("active");
+        }, 650);
+      }
+
+      function closeLetter() {
+        overlay.classList.remove("active");
+
+        if (selectedFlower === null) return;
+
+        const flower = flowers3D[selectedFlower];
+        flower.returning = true;
+        flower.selected = false;
+      }
+
+      document.getElementById("close").addEventListener("click", closeLetter);
+
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) closeLetter();
+      });
+
+      /* CONTROLES DE CÁMARA */
+      let dragging = false;
+      let dragMoved = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      renderer.domElement.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        dragMoved = false;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        renderer.domElement.setPointerCapture(event.pointerId);
+      });
+
+      renderer.domElement.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+
+        const dx = event.clientX - lastX;
+        const dy = event.clientY - lastY;
+
+        if (Math.abs(dx) + Math.abs(dy) > 3) {
+          dragMoved = true;
+        }
+
+        cameraYaw -= dx * 0.004;
+        cameraPitch -= dy * 0.003;
+        cameraPitch = Math.max(-0.15, Math.min(0.9, cameraPitch));
+
+        lastX = event.clientX;
+        lastY = event.clientY;
+      });
+
+      renderer.domElement.addEventListener("pointerup", (event) => {
+        dragging = false;
+        renderer.domElement.releasePointerCapture?.(event.pointerId);
+      });
+
+      renderer.domElement.addEventListener(
+        "wheel",
+        (event) => {
+          event.preventDefault();
+
+          cameraDistance += event.deltaY * 0.025;
+          cameraDistance = Math.max(35, Math.min(90, cameraDistance));
+        },
+        { passive: false },
+      );
+
+      /* MÚSICA — Like You Do, Joji */
+      // Coloca tu archivo de audio como: like-you-do.mp3
+      const musicButton = document.getElementById("musicButton");
+      const music = new Audio("Joji - Like You Do.mp3");
+      music.loop = true;
+      music.volume = 0.45;
+
+      let playing = false;
+
+      musicButton.addEventListener("click", async () => {
+        try {
+          if (playing) {
+            music.pause();
+            musicButton.textContent = "▶";
+          } else {
+            await music.play();
+            musicButton.textContent = "Ⅱ";
+          }
+
+          playing = !playing;
+        } catch (error) {
+          console.warn(
+            "No se pudo reproducir la canción. Verifica que like-you-do.mp3 esté junto al HTML.",
+          );
+        }
+      });
+
+      /* LOOP DE ANIMACIÓN */
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const time = clock.getElapsedTime();
+
+        /* Cámara orbital */
+        const cp = Math.cos(cameraPitch);
+        camera.position.set(
+          Math.sin(cameraYaw) * cp * cameraDistance,
+          Math.sin(cameraPitch) * cameraDistance + 5,
+          Math.cos(cameraYaw) * cp * cameraDistance,
+        );
+        camera.lookAt(cameraTarget);
+
+        /* Galaxia gira */
+        galaxyGroup.rotation.y += 0.0011;
+        galaxyGroup.rotation.z = Math.sin(time * 0.12) * 0.012;
+
+        /* El polvo cercano comparte la rotación del sistema. */
+        orbitalDust.rotation.y += 0.00065;
+        orbitalDust.rotation.z = Math.sin(time * 0.08) * 0.025;
+
+        sparkleCloud.rotation.y -= 0.0011;
+        sparkleCloud.rotation.x = Math.sin(time * 0.11) * 0.025;
+
+        /* Corazón respira */
+        heart.scale.setScalar(1 + Math.sin(time * 1.8) * 0.018);
+
+        /* Puente pulsa */
+        bridge.material.opacity = 0.48 + Math.sin(time * 2) * 0.18;
+
+        coreLight.intensity = 8 + Math.sin(time * 2) * 1.5;
+
+        /* Flores */
+        flowers3D.forEach((f) => {
+          if (f.selected) {
+            const progress = Math.min(
+              (performance.now() - f.selectionStart) / 800,
+              1,
+            );
+
+            const eased = 1 - Math.pow(1 - progress, 3);
+
+            const target = new THREE.Vector3(0, 2.2, 8);
+
+            f.mesh.position.lerpVectors(f.basePosition, target, eased);
+
+            f.mesh.scale.setScalar(f.mesh.userData.baseScale + eased * 1.15);
+
+            f.mesh.rotation.y += 0.01;
+          } else if (f.returning) {
+            f.angle += f.speed;
+
+            const x = Math.cos(f.angle) * f.radius;
+            const z = Math.sin(f.angle) * f.radius * 0.58;
+            const y = Math.sin(f.angle * 1.8) * 0.8;
+
+            f.mesh.position.lerp(new THREE.Vector3(x, y, z), 0.08);
+
+            f.mesh.scale.lerp(
+              new THREE.Vector3(
+                f.mesh.userData.baseScale,
+                f.mesh.userData.baseScale,
+                f.mesh.userData.baseScale,
+              ),
+              0.08,
+            );
+
+            if (f.mesh.position.distanceTo(new THREE.Vector3(x, y, z)) < 0.08) {
+              f.returning = false;
+              selectedFlower = null;
+            }
+          } else {
+            f.angle += f.speed;
+
+            const x = Math.cos(f.angle) * f.radius;
+            const z = Math.sin(f.angle) * f.radius * 0.58;
+            const y = Math.sin(f.angle * 1.7) * 0.75;
+
+            f.mesh.position.set(x, y, z);
+
+            /* Flotación individual */
+            f.mesh.position.y += Math.sin(time * 1.4 + f.angle) * 0.15;
+
+            /* Orientación a la cámara */
+            f.mesh.lookAt(camera.position);
+          }
+
+          /* Label */
+          const world = new THREE.Vector3();
+          f.mesh.getWorldPosition(world);
+          world.y += 2.6;
+          world.project(camera);
+
+          const sx = (world.x * 0.5 + 0.5) * window.innerWidth;
+
+          const sy = (world.y * -0.5 + 0.5) * window.innerHeight;
+
+          const visible = world.z < 1;
+
+          f.label.style.opacity = visible ? "1" : "0";
+
+          f.label.style.transform = `translate(-50%, -100%) translate(${sx}px, ${sy}px)`;
+        });
+
+        /* Anillos orbitales */
+        orbitRings.forEach((ring, i) => {
+          ring.rotation.z = time * (0.015 + i * 0.008);
+        });
+
+        renderer.render(scene, camera);
+      }
+
+      /* RESPONSIVE */
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animate();
+    </script>
+  </body>
+</html>
