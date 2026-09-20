@@ -206,10 +206,148 @@
         font-size: 28px;
         cursor: pointer;
       }
+      #intro-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background:
+          radial-gradient(
+            circle at center,
+            rgba(80, 60, 120, 0.18),
+            transparent 45%
+          ),
+          #020205;
+
+        transition:
+          opacity 1.2s ease,
+          visibility 1.2s ease;
+      }
+
+      #intro-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .intro-content {
+        text-align: center;
+        color: white;
+        animation: introAppear 1.5s ease forwards;
+      }
+
+      .intro-heart {
+        font-size: 70px;
+        color: #fff;
+        margin-bottom: 15px;
+
+        text-shadow:
+          0 0 15px rgba(255, 255, 255, 0.8),
+          0 0 35px rgba(255, 180, 220, 0.5);
+
+        animation: heartbeat 2s ease-in-out infinite;
+      }
+
+      .intro-content h1 {
+        margin: 0;
+
+        font-size: clamp(42px, 7vw, 76px);
+        font-weight: 300;
+        letter-spacing: 5px;
+
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+      }
+
+      .intro-content p {
+        margin: 18px 0 35px;
+
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 16px;
+        line-height: 1.8;
+      }
+
+      #enter-universe {
+        padding: 15px 28px;
+
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 999px;
+
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+
+        color: white;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+
+        cursor: pointer;
+
+        transition:
+          transform 0.3s ease,
+          background 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+
+      #enter-universe:hover {
+        transform: translateY(-3px) scale(1.03);
+
+        background: rgba(255, 255, 255, 0.14);
+
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.15);
+      }
+
+      #enter-universe span {
+        margin-left: 8px;
+      }
+
+      @keyframes introAppear {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes heartbeat {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.12);
+        }
+      }
     </style>
   </head>
 
   <body>
+    <div id="intro-screen">
+      <div class="intro-content">
+        <div class="intro-heart">♡</div>
+
+        <h1>Para ti</h1>
+
+        <p>
+          Hay un universo que hice<br />
+          solamente para ti.
+        </p>
+
+        <button id="enter-universe">
+          <span>♡</span>
+          Entra al universo
+          <span>♡</span>
+        </button>
+      </div>
+    </div>
+
     <div id="webgl-container"></div>
     <div id="labels-container"></div>
 
@@ -222,27 +360,24 @@
           <small>Joji</small>
         </div>
       </div>
-      <div class="header-title">Para ti ♡</div>
+      <div class="header-title">♡ Para tu ♡</div>
       <div>•••</div>
     </header>
 
     <!-- TEXTO CENTRAL -->
     <div class="center-text">
-      <h1>Te Amo</h1>
-      <p>Y en cada universo, también.</p>
+      <h1>Te quiero</h1>
+      <p>En todos los universos.</p>
     </div>
 
     <!-- INSTRUCCIÓN -->
-    <div class="instruction">
-      Arrastra con el mouse para explorar el espacio 3D • Clic en un ramo para
-      leer
-    </div>
+    <div class="instruction">Clic en un ramo para leer</div>
 
     <!-- CARTA MODAL -->
     <div class="overlay" id="overlay">
       <div class="letter">
         <button class="close" id="close">×</button>
-        <div style="font-size: 60px; margin-bottom: 10px">💐</div>
+        <div style="font-size: 60px; margin-bottom: 10px">🌻</div>
         <h2 id="letterTitle" style="font-family: cursive; font-size: 38px">
           Mi amor
         </h2>
@@ -256,7 +391,7 @@
           "
         ></p>
         <div style="margin-top: 25px; font-family: cursive; font-size: 30px">
-          Te Amo Mucho
+          Te quiero Mucho
         </div>
       </div>
     </div>
@@ -954,7 +1089,7 @@
         /* label */
         const label = document.createElement("div");
         label.className = "flower-label-3d";
-        label.textContent = `${data.title} ♡`;
+        label.textContent = `♡ ${data.title} ♡`;
         label.style.pointerEvents = "none";
         labelsContainer.appendChild(label);
 
@@ -1122,6 +1257,19 @@
       const music = new Audio("Joji - Like You Do.mp3");
       music.loop = true;
       music.volume = 0.45;
+
+      const introScreen = document.getElementById("intro-screen");
+      const enterButton = document.getElementById("enter-universe");
+
+      enterButton.addEventListener("click", async () => {
+        try {
+          await music.play();
+        } catch (error) {
+          console.log("No se pudo iniciar el audio:", error);
+        }
+
+        introScreen.classList.add("hidden");
+      });
 
       let playing = false;
 
